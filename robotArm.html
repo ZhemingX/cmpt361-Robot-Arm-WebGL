@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute  vec4 vPosition;
+attribute  vec4 vColor;
+attribute vec3 normal;
+
+varying vec3 normalInterp;
+varying vec3 vertPos;
+varying vec3 diffuseColor;
+
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+uniform mat4 normalMat;
+
+void main()
+{
+    vec4 vertPos4 = modelViewMatrix * vPosition;
+    vertPos = vec3(vertPos4) / vertPos4.w; 
+    normalInterp = vec3(normalMat * vec4(normal, 0.0));
+    gl_Position = projectionMatrix * vertPos4;
+    diffuseColor = vec3(vColor);
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+// Adapted from http://www.cs.toronto.edu/~jacobson/phong-demo/
+precision mediump float;
+varying vec3 normalInterp; 
+varying vec3 vertPos;       
+varying vec3 diffuseColor; 
+
+const float Ka = 0.75;
+const float Kd = 0.85;
+const float Ks = 0.95;
+const float shininessVal = 25.0;
+const vec3 ambientColor = vec3(0.3, 0.3, 0.3);
+const vec3 specularColor = vec3(1.0, 1.0, 1.0);
+const vec3 fLightPos = vec3(8, 10, 8);
+void main()
+{
+    vec3 N = normalize(normalInterp);
+    vec3 L = normalize(fLightPos - vertPos);
+
+    // Lambert's cosine law
+    float lambertian = max(dot(N, L), 0.0);
+    float specular = 0.0;
+    if(lambertian > 0.0) {
+    vec3 R = reflect(-L, N);      // Reflected light vector
+    vec3 V = normalize(-vertPos); // Vector to viewer
+    // Compute the specular term
+    float specAngle = max(dot(R, V), 0.0);
+    specular = pow(specAngle, shininessVal);
+    }
+    gl_FragColor = vec4(Ka * ambientColor +
+                        Kd * lambertian * diffuseColor +
+                        Ks * specular * specularColor, 1.0);
+}
+</script>
+
+<script type="text/javascript" src="webgl-utils.js"></script>
+<script type="text/javascript" src="initShaders.js"></script>
+<script type="text/javascript" src="MV.js"></script>
+<script type="text/javascript" src="robotArm.js"></script>
+
+<div>
+body angle -180 <input id="slider1" type="range"
+ min="-180" max="180" step="10" value="0"
+  />
+ 180
+</div><br/>
+
+<div>
+lower arm angle -180 <input id="slider2" type="range"
+ min="-180" max="180" step="10" value="0"
+  />
+ 180
+</div><br/>
+
+<div>
+upper arm angle -180 <input id="slider3" type="range"
+ min="-180" max="180" step="10" value="0"
+  />
+ 180
+</div><br/>
+
+<div>
+<input type="radio" id="top_view" name="view_check"/>
+Top View
+<input type="radio" id="side_view" name="view_check"/>
+Side View
+</div><br/>
+
+<div>
+    <form id="sphere_pos">  
+        <label for="opos">old x:</label>
+        <input type="text" id="old_x" name="opos">
+        <label for="opos">old y:</label>
+        <input type="text" id="old_y" name="opos">
+        <label for="opos">old z:</label>
+        <input type="text" id="old_z" name="opos"><br>
+        <label for="spos">new x:</label>
+        <input type="text" id="new_x" name="spos">
+        <label for="spos">new y:</label>
+        <input type="text" id="new_y" name="spos">
+        <label for="spos">new z:</label>
+        <input type="text" id="new_z" name="spos"><br>
+        <button type="button" id="fetch">Fetch</button>
+    </form>
+</div>
+
+<body>
+<canvas id="gl-canvas" width="512" height="512">
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas>
+</body>
+</html>
